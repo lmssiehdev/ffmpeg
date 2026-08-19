@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ffmpeg-on-the-web",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-08-19",
+  "r2_buckets": [
+    {
+      "binding": "FFMPEG_ASSETS",
+      "bucket_name": "ffmpeg-on-the-web-assets",
+    },
+  ],
+}

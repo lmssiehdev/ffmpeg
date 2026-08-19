@@ -1,21 +1,55 @@
 {
   "name": "ffmpeg-on-the-web",
-  "type": "module",
   "version": "0.0.1",
-  "engines": {
-    "node": ">=22.12.0"
-  },
+  "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "check": "astro check",
+    "lint": "oxlint .",
+    "lint:ci": "oxlint . --deny-warnings",
+    "lint:fix": "oxlint . --fix",
+    "format": "oxfmt .",
+    "format:check": "oxfmt . --check",
+    "test": "bun test",
+    "build": "astro build && node scripts/prepare-cloudflare-build.mjs",
     "preview": "astro preview",
+    "cloudflare:dev": "bun run build && wrangler pages dev",
+    "cloudflare:bucket:create": "wrangler r2 bucket create ffmpeg-on-the-web-assets",
+    "cloudflare:assets:upload": "wrangler r2 object put ffmpeg-on-the-web-assets/ffmpeg/0.12.10/ffmpeg-core.wasm --file public/ffmpeg/ffmpeg-core.wasm --content-type application/wasm --cache-control 'public, max-age=31536000, immutable' --remote",
+    "deploy": "bun run build && bun run cloudflare:assets:upload && wrangler pages deploy",
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/mdx": "^7.0.6",
-    "@astrojs/rss": "^4.0.19",
-    "@astrojs/sitemap": "^3.7.3",
+    "@astrojs/react": "^6.0.3",
+    "@base-ui/react": "^1.7.0",
+    "@ffmpeg/core": "0.12.10",
+    "@ffmpeg/ffmpeg": "0.12.15",
+    "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.3",
-    "sharp": "^0.35.0"
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "filesize": "^11.0.22",
+    "just-bash": "3.4.1",
+    "lucide-react": "^1.32.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.3",
+    "tw-animate-css": "^1.4.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@oxlint/plugins": "1.79.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "oxfmt": "0.64.0",
+    "oxlint": "1.79.0",
+    "typescript": "^6.0.0",
+    "wrangler": "^4.124.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
