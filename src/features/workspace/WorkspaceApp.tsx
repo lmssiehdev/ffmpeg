@@ -1,4 +1,5 @@
 import { Cpu, FolderOpen, ShieldCheck } from "lucide-react"
+import { useEffect, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -6,8 +7,26 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { Terminal } from "@/features/terminal/Terminal"
 import { UploadManager } from "@/features/uploads/UploadManager"
 import { PreviewPanel } from "@/features/workspace/PreviewPanel"
+import { parseWorkspaceQuery, workspaceQueryBootstrap } from "@/features/workspace/query-bootstrap"
+import { useWorkspaceStore } from "@/features/workspace/store"
 
 export default function WorkspaceApp() {
+  const [queryBootstrap] = useState(() => parseWorkspaceQuery(window.location.search))
+
+  useEffect(() => {
+    const { addUploads, appendTerminal } = useWorkspaceStore.getState()
+
+    void workspaceQueryBootstrap
+      .run(queryBootstrap, {
+        addUploads,
+        onError: (message) => appendTerminal("stderr", message),
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "Workspace link setup failed."
+        appendTerminal("stderr", message)
+      })
+  }, [queryBootstrap])
+
   return (
     <TooltipProvider>
       <main className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-background text-foreground">
@@ -37,7 +56,7 @@ export default function WorkspaceApp() {
           <UploadManager />
           <div className="grid min-h-0 gap-4 lg:grid-rows-[minmax(220px,0.72fr)_minmax(340px,1fr)]">
             <PreviewPanel />
-            <Terminal />
+            <Terminal initialCommand={queryBootstrap.command} />
           </div>
         </div>
 

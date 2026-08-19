@@ -28,8 +28,8 @@ function formatTimings(timings: EngineTimings) {
   ].join(" · ")
 }
 
-export function Terminal() {
-  const [command, setCommand] = useState("")
+export function Terminal({ initialCommand = "" }: { initialCommand?: string }) {
+  const [command, setCommand] = useState(initialCommand)
   const [historyIndex, setHistoryIndex] = useState<number | null>(null)
   const [announcement, setAnnouncement] = useState("Terminal ready.")
   const [isExecuting, setIsExecuting] = useState(false)
