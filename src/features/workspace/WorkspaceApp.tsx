@@ -1,9 +1,11 @@
-import { FolderOpen, ShieldCheck } from "lucide-react"
+import { ShieldCheck, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { WorkspaceMark } from "@/components/WorkspaceMark"
 import { Terminal } from "@/features/terminal/Terminal"
 import { UploadManager } from "@/features/uploads/UploadManager"
 import { PreviewPanel } from "@/features/workspace/PreviewPanel"
@@ -33,18 +35,32 @@ export default function WorkspaceApp() {
         <header className="shrink-0 border-b bg-card">
           <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background">
-                <FolderOpen className="size-4" />
-              </div>
+              <WorkspaceMark className="size-7 shrink-0 text-foreground" />
               <div className="min-w-0">
                 <h1 className="truncate text-sm font-semibold">FFmpeg Workspace</h1>
                 <p className="truncate text-xs text-muted-foreground">Convert media without uploading it</p>
               </div>
             </div>
-            <div className="hidden items-center gap-2 sm:flex">
-              <Badge variant="outline">
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge className="hidden sm:inline-flex" variant="outline">
                 <ShieldCheck /> Files stay on your device
               </Badge>
+              <Button
+                render={
+                  <a
+                    href="https://github.com/lmssiehdev/ffmpeg"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Star FFmpeg Workspace on GitHub"
+                  />
+                }
+                className="size-9 px-0 sm:h-7 sm:w-auto sm:px-2.5"
+                size="sm"
+                variant="outline"
+              >
+                <Star className="size-4" />
+                <span className="hidden sm:inline">Star on GitHub</span>
+              </Button>
             </div>
           </div>
         </header>
@@ -59,7 +75,14 @@ export default function WorkspaceApp() {
 
         <Separator />
         <footer className="shrink-0 px-4 py-2 text-center text-[11px] text-muted-foreground">
-          Your files stay on your device.
+          Made with <span aria-hidden="true">&lt;3</span>
+          <span className="sr-only">love</span> by{" "}
+          <a
+            className="font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+            href="https://lmssieh.com"
+          >
+            lmssieh.com
+          </a>
         </footer>
       </main>
     </TooltipProvider>
