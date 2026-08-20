@@ -7,6 +7,8 @@ import tailwindcss from "@tailwindcss/vite"
 import { defineConfig, fontProviders } from "astro/config"
 
 export default defineConfig({
+  site: process.env.SITE_URL,
+
   integrations: [react()],
 
   fonts: [
