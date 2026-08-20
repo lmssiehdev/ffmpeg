@@ -1,4 +1,4 @@
-import { Cpu, FolderOpen, ShieldCheck } from "lucide-react"
+import { FolderOpen, ShieldCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
@@ -38,15 +38,12 @@ export default function WorkspaceApp() {
               </div>
               <div className="min-w-0">
                 <h1 className="truncate text-sm font-semibold">FFmpeg Workspace</h1>
-                <p className="truncate text-xs text-muted-foreground">A local media shell in your browser</p>
+                <p className="truncate text-xs text-muted-foreground">Convert media without uploading it</p>
               </div>
             </div>
             <div className="hidden items-center gap-2 sm:flex">
               <Badge variant="outline">
-                <ShieldCheck /> Local only
-              </Badge>
-              <Badge variant="outline">
-                <Cpu /> Single-thread core
+                <ShieldCheck /> Files stay on your device
               </Badge>
             </div>
           </div>
@@ -62,7 +59,7 @@ export default function WorkspaceApp() {
 
         <Separator />
         <footer className="shrink-0 px-4 py-2 text-center text-[11px] text-muted-foreground">
-          Processing happens locally with ffmpeg.wasm. Large media may exceed browser memory limits.
+          Your files stay on your device.
         </footer>
       </main>
     </TooltipProvider>

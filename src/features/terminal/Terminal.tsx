@@ -221,7 +221,7 @@ export function Terminal({ initialCommand = "" }: { initialCommand?: string }) {
           <TerminalSquare className="size-4 text-muted-foreground" />
           <div>
             <h2 className="text-sm font-medium">Terminal</h2>
-            <p className="text-xs text-muted-foreground">just-bash + ffmpeg.wasm</p>
+            <p className="text-xs text-muted-foreground">Run FFmpeg commands</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
