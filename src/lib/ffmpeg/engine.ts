@@ -9,6 +9,8 @@ import { inferMimeType } from "@/lib/utils"
 type FFmpegInstance = import("@ffmpeg/ffmpeg").FFmpeg
 type FFmpegRuntime = typeof import("@ffmpeg/ffmpeg")
 
+const FFMPEG_CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm"
+
 interface RunOptions {
   onLog: (type: "stdout" | "stderr", message: string) => void
   onProgress: (progress: number) => void
@@ -81,10 +83,6 @@ class BrowserFfmpegEngine {
     return this.ffmpeg
   }
 
-  private coreAssetUrl(fileName: string) {
-    return new URL(`${import.meta.env.BASE_URL}ffmpeg/${fileName}`, window.location.href).href
-  }
-
   private async load(generation: number, signal?: AbortSignal) {
     if (this.ffmpeg?.loaded) return
     if (this.loadPromise) {
@@ -97,8 +95,8 @@ class BrowserFfmpegEngine {
       const ffmpeg = await this.getInstance(generation, signal)
       await ffmpeg.load(
         {
-          coreURL: this.coreAssetUrl("ffmpeg-core.js"),
-          wasmURL: this.coreAssetUrl("ffmpeg-core.wasm"),
+          coreURL: `${FFMPEG_CORE_BASE_URL}/ffmpeg-core.js`,
+          wasmURL: `${FFMPEG_CORE_BASE_URL}/ffmpeg-core.wasm`,
         },
         { signal },
       )

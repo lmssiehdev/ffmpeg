@@ -67,7 +67,7 @@ describe("workspace query bootstrap", () => {
     expect(replayedRun).toBe(firstRun)
     await expect(firstRun).resolves.toEqual({ addedFiles: 1, failedUrls: [] })
     expect(fetchCount).toBe(1)
-    expect(requestedUrls).toEqual(["/api/remote-file?url=https%3A%2F%2Fexample.com%2Fmy%2520clip.mp4"])
+    expect(requestedUrls).toEqual(["https://example.com/my%20clip.mp4"])
     expect(addedBatches).toHaveLength(1)
     expect(addedBatches[0]?.[0]?.name).toBe("my clip.mp4")
     expect(addedBatches[0]?.[0]?.type).toBe("video/mp4")
@@ -81,9 +81,9 @@ describe("workspace query bootstrap", () => {
     const addedBatches: File[][] = []
     const errors: string[] = []
     const fetchImplementation: typeof fetch = async (input) => {
-      const remoteUrl = new URL(String(input), "https://workspace.example").searchParams.get("url") ?? ""
+      const remoteUrl = String(input)
       if (remoteUrl.endsWith("missing.mp4")) {
-        return Response.json({ error: "The remote server returned 404." }, { status: 502 })
+        return new Response(null, { status: 404 })
       }
       return new Response(new Blob([remoteUrl], { type: remoteUrl.endsWith(".wav") ? "audio/wav" : "video/mp4" }))
     }
@@ -99,5 +99,23 @@ describe("workspace query bootstrap", () => {
     expect(addedBatches[0]?.map((file) => file.name)).toEqual(["first.mp4", "last.wav"])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toBe("Could not add missing.mp4: The remote server returned 404.")
+  })
+
+  test("explains browser CORS failures without exposing the remote URL", async () => {
+    const bootstrap = createWorkspaceQueryBootstrap()
+    const config = parseWorkspaceQuery("?file=https%3A%2F%2Fprivate.example.com%2Fsigned.mp4%3Ftoken%3Dsecret")
+    const errors: string[] = []
+
+    await bootstrap.run(config, {
+      addUploads: () => undefined,
+      fetch: async () => {
+        throw new TypeError("Failed to fetch")
+      },
+      onError: (message) => errors.push(message),
+    })
+
+    expect(errors).toEqual([
+      "Could not add signed.mp4: The browser could not download it. The host must allow cross-origin requests (CORS).",
+    ])
   })
 })

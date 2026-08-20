@@ -1,8 +1,5 @@
-import { z } from "zod"
-
 const MAX_COMMAND_LENGTH = 20_000
 const MAX_REMOTE_FILES = 8
-const ProxyErrorResponseSchema = z.object({ error: z.string() })
 
 export interface WorkspaceQueryBootstrap {
   command: string
@@ -70,14 +67,8 @@ function filenameFromUrl(url: URL, index: number) {
 }
 
 async function fetchRemoteFile(url: URL, index: number, fetchImplementation: typeof fetch) {
-  const proxyParams = new URLSearchParams({ url: url.href })
-  const response = await fetchImplementation(`/api/remote-file?${proxyParams}`)
-  if (!response.ok) {
-    const body: unknown = await response.json().catch(() => null)
-    const parsedBody = ProxyErrorResponseSchema.safeParse(body)
-    const message = parsedBody.success ? parsedBody.data.error : `The import failed with HTTP ${response.status}.`
-    throw new Error(message)
-  }
+  const response = await fetchImplementation(url.href)
+  if (!response.ok) throw new Error(`The remote server returned ${response.status}.`)
 
   const blob = await response.blob()
   return new File([blob], filenameFromUrl(url, index), {
@@ -114,7 +105,12 @@ export function createWorkspaceQueryBootstrap() {
           const url = config.remoteUrls[index]
           if (!url) return
           failedUrls.push(url)
-          const reason = result.reason instanceof Error ? result.reason.message : "Unknown download error."
+          const reason =
+            result.reason instanceof TypeError
+              ? "The browser could not download it. The host must allow cross-origin requests (CORS)."
+              : result.reason instanceof Error
+                ? result.reason.message
+                : "Unknown download error."
           dependencies.onError?.(`Could not add ${filenameFromUrl(url, index)}: ${reason}`)
         })
 
