@@ -214,7 +214,7 @@ export function UploadManager() {
         <div className="min-w-0">
           <h2 className="text-sm font-medium">Workspace files</h2>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-            <span>Local only</span>
+            <span>Stored on this device</span>
             <span aria-hidden="true">·</span>
             <span>
               {readyAssets.length} {readyAssets.length === 1 ? "file" : "files"}
