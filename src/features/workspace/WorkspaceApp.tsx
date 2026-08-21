@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { WorkspaceMark } from "@/components/WorkspaceMark"
 import { Terminal } from "@/features/terminal/Terminal"
 import { UploadManager } from "@/features/uploads/UploadManager"
+import { installFfmpegWorkspaceApi, markFfmpegWorkspaceBootstrapReady } from "@/features/workspace/browser-api"
 import { PreviewPanel } from "@/features/workspace/PreviewPanel"
 import { parseWorkspaceQuery, workspaceQueryBootstrap } from "@/features/workspace/query-bootstrap"
 import { useWorkspaceStore } from "@/features/workspace/store"
@@ -16,6 +17,7 @@ export default function WorkspaceApp() {
   const [queryBootstrap] = useState(() => parseWorkspaceQuery(window.location.search))
 
   useEffect(() => {
+    installFfmpegWorkspaceApi()
     const { addUploads, appendTerminal } = useWorkspaceStore.getState()
 
     void workspaceQueryBootstrap
@@ -27,6 +29,7 @@ export default function WorkspaceApp() {
         const message = error instanceof Error ? error.message : "Workspace link setup failed."
         appendTerminal("stderr", message)
       })
+      .finally(markFfmpegWorkspaceBootstrapReady)
   }, [queryBootstrap])
 
   return (

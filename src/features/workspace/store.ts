@@ -52,14 +52,18 @@ interface WorkspaceState {
   engineStatus: EngineStatus
   engineProgress: number | null
   engineError: string | null
+  commandRunning: boolean
+  commandAnnouncement: string
   terminalEntries: TerminalEntry[]
   history: string[]
-  addUploads: (files: File[]) => void
-  upsertOutput: (name: string, blob: Blob) => void
+  addUploads: (files: File[]) => WorkspaceAsset[]
+  upsertOutput: (name: string, blob: Blob) => WorkspaceAsset
   retryAsset: (id: string) => void
   removeAsset: (id: string) => void
   selectAsset: (id: string | null) => void
   setEngine: (status: EngineStatus, progress?: number | null, error?: string | null) => void
+  setCommandRunning: (running: boolean) => void
+  setCommandAnnouncement: (message: string) => void
   appendTerminal: (kind: TerminalEntry["kind"], text: string) => void
   clearTerminal: () => void
   addHistory: (command: string) => void
@@ -71,6 +75,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   engineStatus: "idle",
   engineProgress: null,
   engineError: null,
+  commandRunning: false,
+  commandAnnouncement: "Terminal ready.",
   terminalEntries: [
     {
       id: crypto.randomUUID(),
@@ -83,6 +89,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   addUploads: (files) => {
     const nextAssets = [...get().assets]
+    const addedAssets: WorkspaceAsset[] = []
     let workspaceSize = nextAssets
       .filter((asset) => asset.status === "ready")
       .reduce((total, asset) => total + asset.size, 0)
@@ -95,6 +102,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           : undefined
       const asset = makeAsset(file, name, "upload", validationError)
       nextAssets.push(asset)
+      addedAssets.push(asset)
       if (asset.status === "ready") workspaceSize += asset.size
     }
 
@@ -102,6 +110,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       assets: nextAssets,
       selectedAssetId: get().selectedAssetId ?? nextAssets[0]?.id ?? null,
     })
+    return addedAssets
   },
 
   upsertOutput: (name, blob) => {
@@ -110,7 +119,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     if (!existing) {
       set((state) => ({ assets: [...state.assets, replacement], selectedAssetId: replacement.id }))
-      return
+      return replacement
     }
 
     URL.revokeObjectURL(existing.objectUrl)
@@ -119,6 +128,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       assets: state.assets.map((asset) => (asset.id === existing.id ? replacement : asset)),
       selectedAssetId: existing.id,
     }))
+    return replacement
   },
 
   retryAsset: (id) => {
@@ -166,6 +176,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setEngine: (engineStatus, engineProgress = null, engineError = null) =>
     set({ engineStatus, engineProgress, engineError }),
+
+  setCommandRunning: (commandRunning) => set({ commandRunning }),
+
+  setCommandAnnouncement: (commandAnnouncement) => set({ commandAnnouncement }),
 
   appendTerminal: (kind, text) => {
     if (!text) return
