@@ -19,10 +19,10 @@ interface WorkspaceQueryBootstrapDependencies {
 
 /**
  * Initial-page query contract:
- *   ?command=ffmpeg...&file=https://example.com/input.mp4&file=https://example.com/audio.wav
+ *   ?command=ffmpeg...&file=https://example.com/input.png&file=https://example.com/overlay.webp
  *
- * `file` is repeatable, order-preserving, HTTPS-only, and capped to keep an
- * accidental shared link from starting an unbounded set of downloads.
+ * `file` is repeatable, order-preserving, HTTPS-only, image-only at load time,
+ * and capped to keep an accidental shared link from starting unbounded downloads.
  */
 export function parseWorkspaceQuery(search: string): WorkspaceQueryBootstrap {
   const params = new URLSearchParams(search)
@@ -63,16 +63,24 @@ function filenameFromUrl(url: URL, index: number) {
   }
 
   const sanitized = name?.replaceAll(/[/\\\0]/g, "_").trim()
-  return sanitized || `remote-file-${index + 1}`
+  return sanitized || `remote-image-${index + 1}`
 }
 
-async function fetchRemoteFile(url: URL, index: number, fetchImplementation: typeof fetch) {
-  const response = await fetchImplementation(url.href)
-  if (!response.ok) throw new Error(`The remote server returned ${response.status}.`)
+async function fetchRemoteImage(url: URL, index: number, fetchImplementation: typeof fetch) {
+  const params = new URLSearchParams({ url: url.href })
+  const response = await fetchImplementation(`/api/image?${params}`)
+  if (!response.ok) {
+    if (response.status === 413) throw new Error("The image exceeds the 10 MiB remote image limit.")
+    if (response.status === 415) throw new Error("Remote query files only support images.")
+    throw new Error(`The image bridge returned HTTP ${response.status}.`)
+  }
+
+  const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() ?? ""
+  if (!contentType.startsWith("image/")) throw new Error("Remote query files only support images.")
 
   const blob = await response.blob()
   return new File([blob], filenameFromUrl(url, index), {
-    type: blob.type || response.headers.get("content-type") || "application/octet-stream",
+    type: contentType,
     lastModified: Date.now(),
   })
 }
@@ -91,7 +99,7 @@ export function createWorkspaceQueryBootstrap() {
       started = (async () => {
         const fetchImplementation = dependencies.fetch ?? fetch
         const imports = await Promise.allSettled(
-          config.remoteUrls.map((url, index) => fetchRemoteFile(url, index, fetchImplementation)),
+          config.remoteUrls.map((url, index) => fetchRemoteImage(url, index, fetchImplementation)),
         )
         const files: File[] = []
         const failedUrls: URL[] = []
@@ -107,7 +115,7 @@ export function createWorkspaceQueryBootstrap() {
           failedUrls.push(url)
           const reason =
             result.reason instanceof TypeError
-              ? "The browser could not download it. The host must allow cross-origin requests (CORS)."
+              ? "The image bridge could not download it."
               : result.reason instanceof Error
                 ? result.reason.message
                 : "Unknown download error."

@@ -30,10 +30,14 @@ Regular development remains available through `bun run dev`.
 
 ## Shared workspace links
 
-Query-prefill links use a repeatable HTTPS `file` parameter and an optional `command` parameter. Commands are filled into the terminal but never run automatically:
+Query-prefill links use a repeatable HTTPS `file` parameter for images and an optional `command` parameter. Commands are filled into the terminal but never run automatically:
 
 ```text
-/?file=https%3A%2F%2Fmedia.example.com%2Finput.mp4&command=ffmpeg%20-i%20'.%2Finput.mp4'%20output.webm
+/?file=https%3A%2F%2Fimages.example.com%2Finput.png&command=ffmpeg%20-i%20'.%2Finput.png'%20output.webp
 ```
 
-Remote files are downloaded directly by the visitor's browser. Their host must permit cross-origin browser requests with an appropriate `Access-Control-Allow-Origin` response header. There is no server-side URL proxy.
+Each URL is fetched through the same-origin `/api/image` bridge, so the image host does not need to opt into browser CORS. The bridge accepts public HTTPS image URLs from arbitrary hosts, rejects private-network targets and non-image responses, follows only validated redirects, and limits each response to 10 MiB.
+
+The shared-link `file` contract is intentionally image-only. Remote video, audio, subtitle, and other file URLs are not imported—even when their origin permits direct CORS—and the browser does not fall back to fetching them directly. Add those files with the local upload control instead.
+
+Regular `bun run dev` serves the Astro endpoint for normal development. Use `bun run cloudflare:dev` before deployment to verify the Cloudflare runtime and its strictly-public outbound fetch policy.

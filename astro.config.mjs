@@ -2,14 +2,16 @@
 
 import { fileURLToPath } from "node:url"
 
+import cloudflare from "@astrojs/cloudflare"
 import react from "@astrojs/react"
 import tailwindcss from "@tailwindcss/vite"
 import { defineConfig, fontProviders } from "astro/config"
 
 export default defineConfig({
   site: process.env.SITE_URL,
-
+  adapter: cloudflare({ imageService: "passthrough" }),
   integrations: [react()],
+  session: false,
 
   fonts: [
     {
