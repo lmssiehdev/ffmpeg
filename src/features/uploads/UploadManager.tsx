@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { hintFfmpegDownload } from "@/features/workspace/ffmpeg-warmup"
 import { getMediaPreviewKind } from "@/features/workspace/media-preview"
 import { useWorkspaceStore } from "@/features/workspace/store"
 import type { WorkspaceAsset } from "@/features/workspace/types"
@@ -237,7 +238,13 @@ export function UploadManager() {
             )}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="h-9 sm:h-7" onClick={() => inputRef.current?.click()}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 sm:h-7"
+          onPointerDown={hintFfmpegDownload}
+          onClick={() => inputRef.current?.click()}
+        >
           <UploadCloud data-icon="inline-start" />
           Add files
         </Button>
@@ -262,6 +269,7 @@ export function UploadManager() {
           )}
           onDragEnter={(event) => {
             event.preventDefault()
+            hintFfmpegDownload()
             setIsDragging(true)
           }}
           onDragOver={(event) => event.preventDefault()}
@@ -283,7 +291,13 @@ export function UploadManager() {
               Media and related files · 512 MB/file · 768 MB total
             </p>
           </div>
-          <Button variant="outline" size="sm" className="h-9 shrink-0 sm:h-7" onClick={() => inputRef.current?.click()}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 shrink-0 sm:h-7"
+            onPointerDown={hintFfmpegDownload}
+            onClick={() => inputRef.current?.click()}
+          >
             Browse
           </Button>
         </div>

@@ -1,4 +1,4 @@
-import { CircleStop, CornerDownLeft, LoaderCircle, TerminalSquare } from "lucide-react"
+import { AlertTriangle, CheckCircle2, CircleStop, CornerDownLeft, LoaderCircle, TerminalSquare } from "lucide-react"
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type SubmitEvent } from "react"
 
 import { Badge } from "@/components/ui/badge"
@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { workspaceCommandRunner } from "@/features/terminal/command-runner"
 import { FileMentionInput } from "@/features/terminal/FileMentionInput"
 import { completeFilename } from "@/features/terminal/shell"
+import { prepareFfmpeg } from "@/features/workspace/ffmpeg-warmup"
 import { useWorkspaceStore } from "@/features/workspace/store"
 import { cn } from "@/lib/utils"
 
@@ -24,10 +25,21 @@ export function Terminal({ initialCommand = "" }: { initialCommand?: string }) {
   const engineProgress = useWorkspaceStore((state) => state.engineProgress)
   const commandRunning = useWorkspaceStore((state) => state.commandRunning)
   const commandAnnouncement = useWorkspaceStore((state) => state.commandAnnouncement)
+  const enginePreparationStatus = useWorkspaceStore((state) => state.enginePreparationStatus)
   const clearTerminal = useWorkspaceStore((state) => state.clearTerminal)
 
   const isBusy = commandRunning
-  const displayedStatus = isBusy && (engineStatus === "idle" || engineStatus === "ready") ? "running" : engineStatus
+  const isPreparing = enginePreparationStatus === "preparing" || (isBusy && engineStatus === "loading")
+  const displayedStatus =
+    isBusy && engineStatus !== "loading"
+      ? "Running"
+      : isPreparing
+        ? "Preparing FFmpeg"
+        : enginePreparationStatus === "ready"
+          ? "FFmpeg ready"
+          : enginePreparationStatus === "error"
+            ? "FFmpeg unavailable"
+            : "FFmpeg on demand"
   const readyAssets = useMemo(() => assets.filter((asset) => asset.status === "ready"), [assets])
 
   useEffect(() => {
@@ -115,18 +127,50 @@ export function Terminal({ initialCommand = "" }: { initialCommand?: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="capitalize">
-            {isBusy && <LoaderCircle className="animate-spin motion-reduce:animate-none" />}
+          <Badge variant={enginePreparationStatus === "error" ? "destructive" : "outline"}>
+            {(isPreparing || (isBusy && engineStatus !== "loading")) && (
+              <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            )}
+            {!isBusy && enginePreparationStatus === "ready" && <CheckCircle2 aria-hidden="true" />}
+            {!isBusy && enginePreparationStatus === "error" && <AlertTriangle aria-hidden="true" />}
             {displayedStatus}
           </Badge>
           {isBusy && (
             <Button variant="outline" size="sm" onClick={cancel}>
               <CircleStop data-icon="inline-start" />
-              Stop
+              {engineStatus === "loading" ? "Cancel" : "Stop"}
             </Button>
           )}
         </div>
       </header>
+
+      {isPreparing && (
+        <div className="flex min-h-9 items-center gap-2 border-b bg-muted/25 px-4 py-2 text-xs text-muted-foreground">
+          <LoaderCircle className="size-3.5 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+          <span>
+            {isBusy
+              ? "Your command will start when FFmpeg is ready."
+              : "Loading the 31 MB FFmpeg core. This version is cached for future visits."}
+          </span>
+        </div>
+      )}
+
+      {!isBusy && enginePreparationStatus === "error" && (
+        <div className="flex min-h-9 flex-wrap items-center gap-x-3 gap-y-2 border-b bg-destructive/5 px-4 py-2 text-xs">
+          <span className="min-w-0 flex-1 text-muted-foreground">
+            FFmpeg couldn’t load. Check your connection and try again.
+          </span>
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={() => {
+              void prepareFfmpeg().catch(() => undefined)
+            }}
+          >
+            Retry
+          </Button>
+        </div>
+      )}
 
       {engineProgress !== null && isBusy && (
         <Progress value={engineProgress * 100} className="rounded-none" aria-label="Estimated FFmpeg progress" />

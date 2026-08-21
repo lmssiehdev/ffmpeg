@@ -1,6 +1,6 @@
 import { create } from "zustand"
 
-import type { EngineStatus, TerminalEntry, WorkspaceAsset } from "@/features/workspace/types"
+import type { EnginePreparationStatus, EngineStatus, TerminalEntry, WorkspaceAsset } from "@/features/workspace/types"
 import { inferMimeType } from "@/lib/utils"
 
 const MAX_TERMINAL_ENTRIES = 800
@@ -52,6 +52,8 @@ interface WorkspaceState {
   engineStatus: EngineStatus
   engineProgress: number | null
   engineError: string | null
+  enginePreparationStatus: EnginePreparationStatus
+  enginePreparationError: string | null
   commandRunning: boolean
   commandAnnouncement: string
   terminalEntries: TerminalEntry[]
@@ -62,6 +64,7 @@ interface WorkspaceState {
   removeAsset: (id: string) => void
   selectAsset: (id: string | null) => void
   setEngine: (status: EngineStatus, progress?: number | null, error?: string | null) => void
+  setEnginePreparation: (status: EnginePreparationStatus, error?: string | null) => void
   setCommandRunning: (running: boolean) => void
   setCommandAnnouncement: (message: string) => void
   appendTerminal: (kind: TerminalEntry["kind"], text: string) => void
@@ -75,6 +78,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   engineStatus: "idle",
   engineProgress: null,
   engineError: null,
+  enginePreparationStatus: "unloaded",
+  enginePreparationError: null,
   commandRunning: false,
   commandAnnouncement: "Terminal ready.",
   terminalEntries: [
@@ -176,6 +181,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setEngine: (engineStatus, engineProgress = null, engineError = null) =>
     set({ engineStatus, engineProgress, engineError }),
+
+  setEnginePreparation: (enginePreparationStatus, enginePreparationError = null) =>
+    set({ enginePreparationStatus, enginePreparationError }),
 
   setCommandRunning: (commandRunning) => set({ commandRunning }),
 

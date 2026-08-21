@@ -1,6 +1,7 @@
 export type AssetSource = "upload" | "output"
 export type AssetStatus = "ready" | "error"
 export type EngineStatus = "idle" | "loading" | "ready" | "running" | "error"
+export type EnginePreparationStatus = "unloaded" | "preparing" | "ready" | "error"
 
 export interface WorkspaceAsset {
   id: string

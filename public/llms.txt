@@ -1,0 +1,16 @@
+# FFmpeg Workspace
+
+> A browser-based FFmpeg media workspace for local conversion, preview, and export. Local files are processed on the visitor's device; shared-link remote imports are limited to public HTTPS images fetched through the site's image bridge.
+
+Commands supplied in shared links are prefilled but never run automatically. Browser automation is available through an explicit versioned API and also requires an explicit run call.
+
+## Product documentation
+
+- [Product overview](/index.md): Features, privacy boundaries, browser requirements, and the local processing model.
+- [Shared workspace links](/docs/shared-links.md): The `command` prefill and repeatable, image-only `file` query parameters, including limits and failure behavior.
+- [Browser automation API](/docs/browser-api.md): The `window.ffmpegWorkspace` v1 contract, readiness, idempotent request IDs, cancellation, file listing, and chunked output reads.
+
+## Optional
+
+- [Deployment notes](/docs/deployment.md): Cloudflare runtime, image bridge, and pinned FFmpeg core delivery.
+- [Source repository](https://github.com/lmssiehdev/ffmpeg): Source code and development setup.

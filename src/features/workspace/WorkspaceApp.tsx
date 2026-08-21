@@ -9,12 +9,14 @@ import { WorkspaceMark } from "@/components/WorkspaceMark"
 import { Terminal } from "@/features/terminal/Terminal"
 import { UploadManager } from "@/features/uploads/UploadManager"
 import { installFfmpegWorkspaceApi, markFfmpegWorkspaceBootstrapReady } from "@/features/workspace/browser-api"
+import { scheduleFfmpegPreparation } from "@/features/workspace/ffmpeg-warmup"
 import { PreviewPanel } from "@/features/workspace/PreviewPanel"
 import { parseWorkspaceQuery, workspaceQueryBootstrap } from "@/features/workspace/query-bootstrap"
 import { useWorkspaceStore } from "@/features/workspace/store"
 
 export default function WorkspaceApp() {
   const [queryBootstrap] = useState(() => parseWorkspaceQuery(window.location.search))
+  const hasReadyAsset = useWorkspaceStore((state) => state.assets.some((asset) => asset.status === "ready"))
 
   useEffect(() => {
     installFfmpegWorkspaceApi()
@@ -31,6 +33,10 @@ export default function WorkspaceApp() {
       })
       .finally(markFfmpegWorkspaceBootstrapReady)
   }, [queryBootstrap])
+
+  useEffect(() => {
+    if (hasReadyAsset) scheduleFfmpegPreparation()
+  }, [hasReadyAsset])
 
   return (
     <TooltipProvider>

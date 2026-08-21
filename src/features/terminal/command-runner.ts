@@ -1,6 +1,7 @@
 import { ZodError } from "zod"
 
 import { executeShellCommand } from "@/features/terminal/shell"
+import { resetFfmpegPreparation } from "@/features/workspace/ffmpeg-warmup"
 import { useWorkspaceStore } from "@/features/workspace/store"
 import type { WorkspaceAsset } from "@/features/workspace/types"
 import { ffmpegEngine, type EngineRunResult, type EngineTimings } from "@/lib/ffmpeg/engine"
@@ -71,6 +72,7 @@ function outputDescriptors(names: Iterable<string>) {
 
 class WorkspaceCommandRunner {
   private controller: AbortController | null = null
+  private ffmpegActive = false
 
   get isRunning() {
     return this.controller !== null
@@ -107,8 +109,11 @@ class WorkspaceCommandRunner {
   cancel() {
     if (!this.controller) return
     this.controller.abort(new DOMException("Workspace command cancelled.", "AbortError"))
-    ffmpegEngine.cancel()
-    useWorkspaceStore.getState().setEngine("idle", null)
+    if (this.ffmpegActive) {
+      ffmpegEngine.cancel()
+      resetFfmpegPreparation()
+      useWorkspaceStore.getState().setEngine("idle", null)
+    }
   }
 
   private async execute(
@@ -122,12 +127,17 @@ class WorkspaceCommandRunner {
 
     store.appendTerminal("command", script)
     if (source === "user") store.addHistory(script)
-    announce?.(source === "agent" ? "Agent command running." : "Command running.")
+    announce?.(source === "agent" ? "Agent command accepted." : "Command accepted.")
 
     const runFfmpeg = async (args: string[], runSignal?: AbortSignal) => {
-      const result = await this.runFfmpeg(args, readyAssets(), runSignal ?? signal, announce)
-      for (const name of result.outputs.map((output) => output.name)) outputNames.add(name)
-      return { exitCode: result.exitCode, outputNames: result.outputs.map((output) => output.name) }
+      this.ffmpegActive = true
+      try {
+        const result = await this.runFfmpeg(args, readyAssets(), runSignal ?? signal, announce)
+        for (const name of result.outputs.map((output) => output.name)) outputNames.add(name)
+        return { exitCode: result.exitCode, outputNames: result.outputs.map((output) => output.name) }
+      } finally {
+        this.ffmpegActive = false
+      }
     }
 
     try {
@@ -187,7 +197,13 @@ class WorkspaceCommandRunner {
         {
           onPhase: (phase) => {
             store.setEngine(phase, phase === "running" ? 0 : null)
-            announce?.(phase === "loading" ? "Loading FFmpeg." : "FFmpeg command running.")
+            if (phase === "loading") {
+              store.setEnginePreparation("preparing")
+              announce?.("Preparing FFmpeg. Your command will start when it is ready.")
+            } else {
+              store.setEnginePreparation("ready")
+              announce?.("FFmpeg is ready. Command started.")
+            }
           },
           onLog: (_type, message) => {
             logBuffer.push(message)
@@ -206,6 +222,7 @@ class WorkspaceCommandRunner {
         null,
         result.exitCode === 0 ? null : `FFmpeg exited with code ${result.exitCode}.`,
       )
+      store.setEnginePreparation("ready")
       announce?.(
         result.exitCode === 0
           ? `FFmpeg command completed${result.outputs.length ? ` with ${result.outputs.length} output${result.outputs.length === 1 ? "" : "s"}` : ""}.`
@@ -214,8 +231,9 @@ class WorkspaceCommandRunner {
       return result
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") throw error
-      const message = error instanceof Error ? error.message : "FFmpeg failed unexpectedly."
+      const message = error instanceof Error ? error.message : String(error || "FFmpeg failed unexpectedly.")
       store.setEngine("error", null, message)
+      if (!ffmpegEngine.loaded) store.setEnginePreparation("error", message)
       throw error
     } finally {
       globalThis.clearInterval(flushTimer)

@@ -70,7 +70,10 @@ class BrowserFfmpegEngine {
   }
 
   private getRuntime() {
-    this.runtimePromise ??= import("@ffmpeg/ffmpeg")
+    this.runtimePromise ??= import("@ffmpeg/ffmpeg").catch((error) => {
+      this.runtimePromise = null
+      throw error
+    })
     return this.runtimePromise
   }
 
@@ -105,9 +108,28 @@ class BrowserFfmpegEngine {
     try {
       await this.loadPromise
       this.assertCurrent(generation, signal)
+    } catch (error) {
+      if (generation === this.generation && !this.ffmpeg?.loaded) {
+        this.ffmpeg?.terminate()
+        this.ffmpeg = null
+        this.inputsMounted = false
+        this.inputDirectoryReady = false
+        this.mountedInputs.clear()
+      }
+      throw error
     } finally {
       if (generation === this.generation) this.loadPromise = null
     }
+  }
+
+  get loaded() {
+    return this.ffmpeg?.loaded ?? false
+  }
+
+  async preload(signal?: AbortSignal) {
+    const generation = this.generation
+    await this.load(generation, signal)
+    this.assertCurrent(generation, signal)
   }
 
   private async ensureInputDirectory(ffmpeg: FFmpegInstance, generation: number, signal?: AbortSignal) {
@@ -226,7 +248,7 @@ class BrowserFfmpegEngine {
     }
 
     try {
-      options.onPhase("loading")
+      if (!this.loaded) options.onPhase("loading")
       const loadStartedAt = performance.now()
       await this.load(generation, signal)
       loadMs = elapsedSince(loadStartedAt)
